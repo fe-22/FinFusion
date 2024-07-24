@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 import math
 import hashlib
 import sqlite3
@@ -114,14 +114,18 @@ if 'username' in st.session_state:
         submit_button = st.form_submit_button(label='Adicionar')
 
         if submit_button:
-            # Add financial data to database
-            if card_payment == 'parcelado':
-                for i in range(installments):
-                    installment_amount = calculate_installments(amount, interest_rate, installments)
-                    due_date = date + pd.DateOffset(months=i)
-                    add_financial_data(username, due_date, f"{description} (parcela {i + 1}/{installments})", -installment_amount, type)
-            else:
-                add_financial_data(username, date, description, -amount if type in ['despesa', 'cartão de crédito'] else amount, type)
+            try:
+                # Add financial data to database
+                if card_payment == 'parcelado':
+                    for i in range(installments):
+                        installment_amount = calculate_installments(amount, interest_rate, installments)
+                        due_date = date + timedelta(days=30*i)
+                        add_financial_data(username, due_date.strftime('%Y-%m-%d'), f"{description} (parcela {i + 1}/{installments})", -installment_amount, type)
+                else:
+                    add_financial_data(username, date.strftime('%Y-%m-%d'), description, -amount if type in ['despesa', 'cartão de crédito'] else amount, type)
+                st.success('Dados adicionados com sucesso!')
+            except Exception as e:
+                st.error(f"Erro ao adicionar dados financeiros: {e}")
 
     # Retrieve and display financial data
     financial_data = get_financial_data(username)
@@ -212,6 +216,3 @@ st.markdown("""
     <pre>Ajude o Dev a continuar melhorando sua vida. Pix 11982170425</pre></a></p>
 </footer>
 """, unsafe_allow_html=True)
-
-
-
