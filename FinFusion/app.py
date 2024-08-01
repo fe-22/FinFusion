@@ -4,28 +4,49 @@ import sqlite3
 import matplotlib.pyplot as plt
 import yfinance as yf
 
-# Conectar ao banco de dados
-conn = sqlite3.connect('finfusion.db')
-c = conn.cursor()
+# Função para atualizar o esquema do banco de dados
+def update_database_schema():
+    with sqlite3.connect('finfusion.db') as conn:
+        c = conn.cursor()
+
+        # Verificar se a coluna 'payment_method' já existe
+        c.execute("PRAGMA table_info(financial_data)")
+        columns = [info[1] for info in c.fetchall()]
+
+        if 'payment_method' not in columns:
+            c.execute("ALTER TABLE financial_data ADD COLUMN payment_method TEXT")
+
+        if 'installments' not in columns:
+            c.execute("ALTER TABLE financial_data ADD COLUMN installments INTEGER")
+
+        conn.commit()
+
+# Atualizar o esquema do banco de dados
+update_database_schema()
 
 # Função para recuperar dados financeiros de um usuário
 def get_financial_data(username):
-    c.execute("SELECT date, description, amount, type FROM financial_data WHERE username=?", (username,))
-    return c.fetchall()
+    with sqlite3.connect('finfusion.db') as conn:
+        c = conn.cursor()
+        c.execute("SELECT date, description, amount, type, payment_method, installments FROM financial_data WHERE username=?", (username,))
+        data = c.fetchall()
+    return data
+
+# Função para adicionar despesa ou receita
+def add_financial_data(username, date, description, amount, type, payment_method, installments):
+    with sqlite3.connect('finfusion.db') as conn:
+        c = conn.cursor()
+        c.execute("INSERT INTO financial_data (username, date, description, amount, type, payment_method, installments) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                  (username, date, description, amount, type, payment_method, installments))
+        conn.commit()
 
 # Função para formatar números em moeda
 def format_currency(value):
     return f"{value:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
-# Função para adicionar despesa ou receita
-def add_financial_data(username, date, description, amount, type):
-    c.execute("INSERT INTO financial_data (username, date, description, amount, type) VALUES (?, ?, ?, ?, ?)",
-              (username, date, description, amount, type))
-    conn.commit()
-
 # Função para a página inicial
 def home():
-    st.title('FinFusion - Controle Finaceiro')
+    st.title('FinFusion - Controle Financeiro')
 
     if 'username' in st.session_state:
         username = st.session_state['username']
@@ -37,17 +58,19 @@ def home():
             description = st.text_input('Descrição')
             amount = st.number_input('Quantia', format="%0.2f")
             type = st.selectbox('Tipo', ['Receita', 'Despesa'])
+            payment_method = st.selectbox('Método de Pagamento', ['À Vista', 'Parcelado'])
+            installments = st.number_input('Número de Parcelas', min_value=1, value=1)
             submit_button = st.form_submit_button(label='Adicionar')
 
             if submit_button:
-                add_financial_data(username, date, description, amount, type)
+                add_financial_data(username, date, description, amount, type, payment_method, installments)
                 st.success('Dados financeiros adicionados com sucesso!')
 
         # Exibir os dados financeiros do usuário
         st.subheader('Seus Dados Financeiros')
         financial_data = get_financial_data(username)
         if financial_data:
-            df = pd.DataFrame(financial_data, columns=['date', 'description', 'amount', 'type'])
+            df = pd.DataFrame(financial_data, columns=['date', 'description', 'amount', 'type', 'payment_method', 'installments'])
             st.dataframe(df)
         else:
             st.info('Nenhum dado financeiro encontrado.')
@@ -88,7 +111,7 @@ def financial_analysis():
         # Recuperar dados financeiros
         financial_data = get_financial_data(username)
         if financial_data:
-            df = pd.DataFrame(financial_data, columns=['date', 'description', 'amount', 'type'])
+            df = pd.DataFrame(financial_data, columns=['date', 'description', 'amount', 'type', 'payment_method', 'installments'])
             df['date'] = pd.to_datetime(df['date'])
 
             # Gráfico de barras de renda e despesas por mês
@@ -163,4 +186,3 @@ st.markdown("""
     <pre>Ajude o Dev a continuar melhorando sua vida. Pix 11982170425</pre></a></p>
 </footer>
 """, unsafe_allow_html=True)
-
