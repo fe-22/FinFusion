@@ -1,0 +1,17 @@
+date,description,amount,type
+2024-07-02,Sálario,3993.0,renda
+2024-07-02,Dizimo,-393.0,despesa
+2024-07-06,Fatura Cartão MC,-296.98,despesa
+2024-07-09,Fatura Cartão Visa,-1600.0,despesa
+2024-07-11,Transporte Gustavo (Karina),-285.0,despesa
+2024-07-16,Conta de Água,-200.0,despesa
+2024-07-20,Compra de Roupa (priscila) (parcela 1/1),-100.0,cartão de crédito
+2024-07-20,Compra de Roupa (priscila) (parcela 1/2),-50.01500049995814,cartão de crédito
+2024-08-20,Compra de Roupa (priscila) (parcela 2/2),-50.01500049995814,cartão de crédito
+2024-07-26,Troca de Óleo carro (parcela 1/4),-62.53125312469375,cartão de crédito
+2024-08-26,Troca de Óleo carro (parcela 2/4),-62.53125312469375,cartão de crédito
+2024-09-26,Troca de Óleo carro (parcela 3/4),-62.53125312469375,cartão de crédito
+2024-10-26,Troca de Óleo carro (parcela 4/4),-62.53125312469375,cartão de crédito
+2024-07-30,Compra mercado,-1200.0,despesa
+2024-07-30,Compra mercado,-1200.0,cartão de crédito
+2024-07-30,Compra mercado (parcela 1/1),-1200.0,cartão de crédito
