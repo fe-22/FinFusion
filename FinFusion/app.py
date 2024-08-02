@@ -6,20 +6,27 @@ import yfinance as yf
 
 # Função para atualizar o esquema do banco de dados
 def update_database_schema():
-    with sqlite3.connect('finfusion.db') as conn:
-        c = conn.cursor()
+    conn = sqlite3.connect('finfusion.db')
+    c = conn.cursor()
 
-        # Verificar se a coluna 'payment_method' já existe
+    try:
         c.execute("PRAGMA table_info(financial_data)")
         columns = [info[1] for info in c.fetchall()]
 
         if 'payment_method' not in columns:
             c.execute("ALTER TABLE financial_data ADD COLUMN payment_method TEXT")
+            print("Added payment_method column")
 
         if 'installments' not in columns:
             c.execute("ALTER TABLE financial_data ADD COLUMN installments INTEGER")
+            print("Added installments column")
 
         conn.commit()
+        print("Database schema updated successfully")
+    except sqlite3.Error as e:
+        print(f"Error updating database schema: {e}")
+    finally:
+        conn.close()
 
 # Atualizar o esquema do banco de dados
 update_database_schema()
@@ -37,12 +44,65 @@ def add_financial_data(username, date, description, amount, type, payment_method
     with sqlite3.connect('finfusion.db') as conn:
         c = conn.cursor()
         c.execute("INSERT INTO financial_data (username, date, description, amount, type, payment_method, installments) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                  (username, date, description, amount, type, payment_method, installments))
+                (username, date, description, amount, type, payment_method, installments))
         conn.commit()
 
 # Função para formatar números em moeda
 def format_currency(value):
     return f"{value:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+
+# Função para calcular o valor líquido
+def calculate_net_value(financial_data):
+    net_value = 0
+    for row in financial_data:
+        if row[3] == 'Receita':
+            net_value += row[2]
+        elif row[3] == 'Despesa':
+            net_value -= row[2]
+    return net_value
+
+# Função para calcular as despesas
+def calculate_expenses(financial_data):
+    expenses = 0
+    for row in financial_data:
+        if row[3] == 'Despesa':
+            expenses += row[2]
+    return expenses
+
+# Função para calcular o alerta de cheque especial
+def calculate_special_check_alert(net_value, previous_month_net_value):
+    if net_value < 0:
+        return f"Alerta de cheque especial! Seu saldo é de {format_currency(net_value)} e você está usando {format_currency(-net_value)} do seu cheque especial."
+    elif net_value < previous_month_net_value * 0.92:  # 8% interest rate
+        return f"Alerta de cheque especial! Seu saldo é de {format_currency(net_value)} e você está próximo de usar seu cheque especial."
+    else:
+        return ""
+
+# Função para calcular o saldo
+def calculate_balance(financial_data):
+    balance = 0
+    for row in financial_data:
+        if row[3] == 'Receita':
+            balance += row[2]
+        elif row[3] == 'Despesa':
+            balance -= row[2]
+    return balance
+
+# Função para calcular despesas à vista
+def calculate_cash_expenses(financial_data):
+    expenses = 0
+    for row in financial_data:
+        if row[3] == 'Despesa' and row[4] == 'À Vista':
+            expenses += row[2]
+    return expenses
+
+# Função para calcular despesas de cartão de crédito
+def calculate_credit_card_expenses(financial_data):
+    expenses = 0
+    for row in financial_data:
+        if row[3] == 'Despesa' and row[4] == 'Cartão de Crédito':
+            expenses += row[2]
+    return expenses
 
 # Função para a página inicial
 def home():
@@ -52,13 +112,31 @@ def home():
         username = st.session_state['username']
         st.success(f'Bem-vindo, {username}!')
 
+        # Recuperar dados financeiros do usuário
+        financial_data = get_financial_data(username)
+
+        # Calcular o saldo, despesas à vista e despesas de cartão de crédito
+        balance = calculate_balance(financial_data)
+        cash_expenses = calculate_cash_expenses(financial_data)
+        credit_card_expenses = calculate_credit_card_expenses(financial_data)
+
+        # Exibir informações financeiras
+        st.subheader('Resumo Financeiro')
+        st.metric('Saldo', format_currency(balance))
+        st.metric('Despesas à Vista', format_currency(cash_expenses))
+        st.metric('Despesas no Cartão de Crédito', format_currency(credit_card_expenses))
+
+        # Alerta de saldo negativo
+        if balance < 0:
+            st.error(f'Alerta: Seu saldo está negativo! {format_currency(balance)}')
+
         # Formulário para adicionar dados financeiros
         with st.form(key='finance_form'):
             date = st.date_input('Data')
             description = st.text_input('Descrição')
             amount = st.number_input('Quantia', format="%0.2f")
             type = st.selectbox('Tipo', ['Receita', 'Despesa'])
-            payment_method = st.selectbox('Método de Pagamento', ['À Vista', 'Parcelado'])
+            payment_method = st.selectbox('Método de Pagamento', ['À Vista', 'Parcelado', 'Cartão de Crédito'])
             installments = st.number_input('Número de Parcelas', min_value=1, value=1)
             submit_button = st.form_submit_button(label='Adicionar')
 
@@ -68,7 +146,6 @@ def home():
 
         # Exibir os dados financeiros do usuário
         st.subheader('Seus Dados Financeiros')
-        financial_data = get_financial_data(username)
         if financial_data:
             df = pd.DataFrame(financial_data, columns=['date', 'description', 'amount', 'type', 'payment_method', 'installments'])
             st.dataframe(df)
@@ -103,7 +180,7 @@ def home():
 
 # Função para a página de análise financeira
 def financial_analysis():
-    st.title('FinFusion - Financial Charts')
+    st.title('FinFusion - Análise Financeira')
 
     if 'username' in st.session_state:
         username = st.session_state['username']
