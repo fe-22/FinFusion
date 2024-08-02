@@ -4,6 +4,30 @@ import sqlite3
 import matplotlib.pyplot as plt
 import yfinance as yf
 
+# Função para inicializar o banco de dados
+def initialize_database():
+    conn = sqlite3.connect('finfusion.db')
+    c = conn.cursor()
+
+    # Criar tabela financial_data se não existir
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS financial_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            date DATE NOT NULL,
+            description TEXT,
+            amount REAL NOT NULL,
+            type TEXT NOT NULL,
+            payment_method TEXT,
+            installments INTEGER
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Inicializar o banco de dados
+initialize_database()
+
 # Função para atualizar o esquema do banco de dados
 def update_database_schema():
     conn = sqlite3.connect('finfusion.db')
