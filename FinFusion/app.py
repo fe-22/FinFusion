@@ -3,6 +3,7 @@ import pandas as pd
 import sqlite3
 import matplotlib.pyplot as plt
 import yfinance as yf
+from datetime import datetime, timedelta
 
 # Função para inicializar o banco de dados
 def initialize_database():
@@ -128,6 +129,22 @@ def calculate_credit_card_expenses(financial_data):
             expenses += row[2]
     return expenses
 
+# Função para adicionar dados financeiros de uma planilha
+def add_financial_data_from_file(username, file, file_type):
+    if file_type == 'csv':
+        df = pd.read_csv(file)
+    elif file_type == 'excel':
+        df = pd.read_excel(file)
+    
+    for _, row in df.iterrows():
+        date = row['date']
+        description = row['description']
+        amount = row['amount']
+        type = row['type']
+        payment_method = row['payment_method']
+        installments = row['installments']
+        add_financial_data(username, date, description, amount, type, payment_method, installments)
+
 # Função para a página inicial
 def home():
     st.title('FinFusion - Controle Financeiro')
@@ -135,6 +152,13 @@ def home():
     if 'username' in st.session_state:
         username = st.session_state['username']
         st.success(f'Bem-vindo, {username}!')
+
+        # Upload de planilha
+        uploaded_file = st.file_uploader("Faça upload de uma planilha CSV ou Excel", type=["csv", "xlsx"])
+        if uploaded_file:
+            file_type = 'csv' if uploaded_file.name.endswith('.csv') else 'excel'
+            add_financial_data_from_file(username, uploaded_file, file_type)
+            st.success('Planilha importada com sucesso!')
 
         # Recuperar dados financeiros do usuário
         financial_data = get_financial_data(username)
@@ -165,7 +189,13 @@ def home():
             submit_button = st.form_submit_button(label='Adicionar')
 
             if submit_button:
-                add_financial_data(username, date, description, amount, type, payment_method, installments)
+                if payment_method == 'Parcelado':
+                    for i in range(installments):
+                        installment_date = date + timedelta(days=30*i)
+                        installment_amount = amount / installments
+                        add_financial_data(username, installment_date, description, installment_amount, type, payment_method, installments)
+                else:
+                    add_financial_data(username, date, description, amount, type, payment_method, installments)
                 st.success('Dados financeiros adicionados com sucesso!')
 
         # Exibir os dados financeiros do usuário
@@ -236,6 +266,12 @@ def financial_analysis():
             ax.set_ylabel('Saldo Líquido')
             ax.set_title('Saldo Líquido ao Longo do Tempo')
             st.pyplot(fig)
+
+            # Identificar os maiores gastos
+            st.subheader('Maiores Gastos')
+            expenses_df = df[df['type'] == 'Despesa']
+            top_expenses = expenses_df.nlargest(10, 'amount')
+            st.dataframe(top_expenses[['date', 'description', 'amount', 'payment_method']])
 
             # Define o título do aplicativo
             st.title("Consulta de Ações - Itaú, Bitcoin e Etherium")
