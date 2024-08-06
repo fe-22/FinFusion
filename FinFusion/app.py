@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+import hashlib
 import matplotlib.pyplot as plt
 import yfinance as yf
 from datetime import datetime, timedelta
@@ -9,6 +10,14 @@ from datetime import datetime, timedelta
 def initialize_database():
     conn = sqlite3.connect('finfusion.db')
     c = conn.cursor()
+
+    # Criar tabela users se não existir
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password TEXT NOT NULL
+        )
+    ''')
 
     # Criar tabela financial_data se não existir
     c.execute('''
@@ -20,7 +29,8 @@ def initialize_database():
             amount REAL NOT NULL,
             type TEXT NOT NULL,
             payment_method TEXT,
-            installments INTEGER
+            installments INTEGER,
+            necessity TEXT
         )
     ''')
     conn.commit()
@@ -45,6 +55,10 @@ def update_database_schema():
         if 'installments' not in columns:
             c.execute("ALTER TABLE financial_data ADD COLUMN installments INTEGER")
             print("Added installments column")
+        
+        if 'necessity' not in columns:
+            c.execute("ALTER TABLE financial_data ADD COLUMN necessity TEXT")
+            print("Added necessity column")
 
         conn.commit()
         print("Database schema updated successfully")
@@ -60,21 +74,22 @@ update_database_schema()
 def get_financial_data(username):
     with sqlite3.connect('finfusion.db') as conn:
         c = conn.cursor()
-        c.execute("SELECT date, description, amount, type, payment_method, installments FROM financial_data WHERE username=?", (username,))
+        c.execute("SELECT date, description, amount, type, payment_method, installments, necessity FROM financial_data WHERE username=?", (username,))
         data = c.fetchall()
     return data
 
 # Função para adicionar despesa ou receita
-def add_financial_data(username, date, description, amount, type, payment_method, installments):
+def add_financial_data(username, date, description, amount, type, payment_method, installments, necessity):
     with sqlite3.connect('finfusion.db') as conn:
         c = conn.cursor()
-        c.execute("INSERT INTO financial_data (username, date, description, amount, type, payment_method, installments) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (username, date, description, amount, type, payment_method, installments))
+        c.execute("INSERT INTO financial_data (username, date, description, amount, type, payment_method, installments, necessity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (username, date, description, amount, type, payment_method, installments, necessity))
         conn.commit()
 
 # Função para formatar números em moeda
 def format_currency(value):
-    return f"{value:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    return f"R${value:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+
 
 # Função para calcular o valor líquido
 def calculate_net_value(financial_data):
@@ -143,7 +158,36 @@ def add_financial_data_from_file(username, file, file_type):
         type = row['type']
         payment_method = row['payment_method']
         installments = row['installments']
-        add_financial_data(username, date, description, amount, type, payment_method, installments)
+        necessity = row['necessity']
+        add_financial_data(username, date, description, amount, type, payment_method, installments, necessity)
+
+# Função para exportar dados financeiros para uma planilha
+def export_financial_data_to_excel(username):
+    financial_data = get_financial_data(username)
+    df = pd.DataFrame(financial_data, columns=['date', 'description', 'amount', 'type', 'payment_method', 'installments', 'necessity'])
+    df.to_excel(f'{username}_financial_data.xlsx', index=False)
+
+# Função para hash de senha
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# Função para verificar senha
+def verify_password(username, password):
+    with sqlite3.connect('finfusion.db') as conn:
+        c = conn.cursor()
+        c.execute("SELECT password FROM users WHERE username=?", (username,))
+        stored_password = c.fetchone()
+        if stored_password and stored_password[0] == hash_password(password):
+            return True
+        else:
+            return False
+
+# Função para registrar usuário
+def register_user(username, password):
+    with sqlite3.connect('finfusion.db') as conn:
+        c = conn.cursor()
+        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hash_password(password)))
+        conn.commit()
 
 # Função para a página inicial
 def home():
@@ -186,6 +230,7 @@ def home():
             type = st.selectbox('Tipo', ['Receita', 'Despesa'])
             payment_method = st.selectbox('Método de Pagamento', ['À Vista', 'Parcelado', 'Cartão de Crédito'])
             installments = st.number_input('Número de Parcelas', min_value=1, value=1)
+            necessity = st.selectbox('Necessidade', ['Necessário', 'Supérfluo'])
             submit_button = st.form_submit_button(label='Adicionar')
 
             if submit_button:
@@ -193,44 +238,46 @@ def home():
                     for i in range(installments):
                         installment_date = date + timedelta(days=30*i)
                         installment_amount = amount / installments
-                        add_financial_data(username, installment_date, description, installment_amount, type, payment_method, installments)
+                        add_financial_data(username, installment_date, description, installment_amount, type, payment_method, installments, necessity)
                 else:
-                    add_financial_data(username, date, description, amount, type, payment_method, installments)
+                    add_financial_data(username, date, description, amount, type, payment_method, installments, necessity)
                 st.success('Dados financeiros adicionados com sucesso!')
 
-        # Exibir os dados financeiros do usuário
+        # Exibir os dados financeiros do usuário em forma de tabela
         st.subheader('Seus Dados Financeiros')
-        if financial_data:
-            df = pd.DataFrame(financial_data, columns=['date', 'description', 'amount', 'type', 'payment_method', 'installments'])
-            st.dataframe(df)
-        else:
-            st.info('Nenhum dado financeiro encontrado.')
+        df = pd.DataFrame(financial_data, columns=['Data', 'Descrição', 'Quantia', 'Tipo', 'Método de Pagamento', 'Parcelas', 'Necessidade'])
+        st.table(df)
 
-        # Botão para ir para a página de análise financeira
-        if st.button('Ir para Análise Financeira'):
-            st.session_state['page'] = 'financial_analysis'
-            st.experimental_rerun()
+        # Exportar dados financeiros
+        if st.button('Exportar Dados Financeiros para Excel'):
+            export_financial_data_to_excel(username)
+            st.success('Dados exportados com sucesso!')
+
     else:
-        # Formulário de login
-        with st.form(key='login_form'):
-            username = st.text_input('Username')
-            password = st.text_input('Password', type='password')
-            login_button = st.form_submit_button(label='Login')
-            if login_button:
-                # Simulação de autenticação (deve ser substituída por autenticação real)
-                st.session_state['username'] = username
-                st.success('Logged in successfully!')
+        st.warning('Por favor, faça login ou registre-se.')
 
-        # Formulário de registro
-        with st.form(key='register_form'):
-            new_username = st.text_input('New Username')
-            new_password = st.text_input('New Password', type='password')
-            confirm_password = st.text_input('Confirm Password', type='password')
-            email = st.text_input('Email')
-            register_button = st.form_submit_button(label='Register')
-            if register_button:
-                # Simulação de registro (deve ser substituída por registro real)
-                st.success('User created successfully!')
+    # Login
+    with st.form(key='login_form'):
+        username = st.text_input('Nome de Usuário')
+        password = st.text_input('Senha', type='password')
+        login_button = st.form_submit_button(label='Login')
+
+        if login_button:
+            if verify_password(username, password):
+                st.session_state['username'] = username
+                st.success(f'Bem-vindo, {username}!')
+            else:
+                st.error('Nome de usuário ou senha incorretos.')
+
+    # Cadastro de novo usuário
+    with st.form(key='register_form'):
+        new_username = st.text_input('Nome de Usuário')
+        new_password = st.text_input('Senha', type='password')
+        register_button = st.form_submit_button(label='Registrar')
+
+        if register_button:
+            register_user(new_username, new_password)
+            st.success('Usuário criado com sucesso!')
 
 # Função para a página de análise financeira
 def financial_analysis():
@@ -242,7 +289,7 @@ def financial_analysis():
         # Recuperar dados financeiros
         financial_data = get_financial_data(username)
         if financial_data:
-            df = pd.DataFrame(financial_data, columns=['date', 'description', 'amount', 'type', 'payment_method', 'installments'])
+            df = pd.DataFrame(financial_data, columns=['date', 'description', 'amount', 'type', 'payment_method', 'installments', 'necessity'])
             df['date'] = pd.to_datetime(df['date'])
 
             # Gráfico de barras de renda e despesas por mês
@@ -271,7 +318,7 @@ def financial_analysis():
             st.subheader('Maiores Gastos')
             expenses_df = df[df['type'] == 'Despesa']
             top_expenses = expenses_df.nlargest(10, 'amount')
-            st.dataframe(top_expenses[['date', 'description', 'amount', 'payment_method']])
+            st.table(top_expenses[['date', 'description', 'amount', 'payment_method', 'necessity']])
 
             # Define o título do aplicativo
             st.title("Consulta de Ações - Itaú, Bitcoin e Etherium")
