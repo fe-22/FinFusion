@@ -3,8 +3,7 @@ import pandas as pd
 import sqlite3
 import hashlib
 import matplotlib.pyplot as plt
-import yfinance as yf
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Funções de criação e migração do banco de dados
 def create_database():
@@ -195,6 +194,9 @@ def home():
     st.title('FinFusion - Controle Financeiro')
 
     if 'username' not in st.session_state:
+        st.session_state['username'] = None
+
+    if st.session_state['username'] is None:
         login_form()
     else:
         username = st.session_state['username']
@@ -227,7 +229,6 @@ def login_form():
         if verify_password(username, password):
             st.session_state['username'] = username
             st.success('Login bem-sucedido!')
-            st.experimental_rerun()
         else:
             st.error('Nome de usuário ou senha incorretos.')
 
@@ -237,16 +238,12 @@ def login_form():
 def register_form():
     st.header('Registrar')
     username = st.text_input('Novo Username')
-    password = st.text_input('Nova Password', type='password')
-    confirm_password = st.text_input('Confirmar Password', type='password')
+    password = st.text_input('Novo Password', type='password')
 
     if st.button('Registrar'):
-        if password != confirm_password:
-            st.error('As senhas não coincidem.')
-        else:
-            register_user(username, password)
-            st.success('Usuário registrado com sucesso. Por favor, faça login.')
-            login_form()
+        register_user(username, password)
+        st.success('Usuário registrado com sucesso. Por favor, faça login.')
+        login_form()
 
 def add_financial_data_form(username):
     st.header('Adicionar Dados Financeiros')
@@ -262,7 +259,6 @@ def add_financial_data_form(username):
         add_financial_data(username, date, description, amount, type, payment_method, installments, necessity)
         st.success('Dados adicionados com sucesso!')
         st.session_state['show_graphs'] = False
-        st.experimental_rerun()
 
 if __name__ == '__main__':
     home()
