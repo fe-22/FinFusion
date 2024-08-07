@@ -199,7 +199,7 @@ def verify_password(username, password):
 def register_user(username, password):
     with sqlite3.connect('finfusion.db') as conn:
         c = conn.cursor()
-        c.execute("INSERT INTO users (username, password) VALUES (?, ?, ?)", (username, hash_password(password)))
+        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hash_password(password)))
         conn.commit()
 
 # Função para a página inicial
