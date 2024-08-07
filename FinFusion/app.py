@@ -194,14 +194,23 @@ def plot_balance_evolution(username):
 def home():
     st.title('FinFusion - Controle Financeiro')
 
-    if 'username' in st.session_state:
+    if 'username' not in st.session_state:
+        login_form()
+    else:
         username = st.session_state['username']
         st.success(f'Bem-vindo, {username}!')
+        
+        if 'show_graphs' not in st.session_state:
+            st.session_state['show_graphs'] = False
 
-        if st.sidebar.button('Ver Dados Financeiros e Gráficos'):
+        if st.button('Adicionar Dados Financeiros'):
+            st.session_state['show_graphs'] = False
+            add_financial_data_form(username)
+
+        if st.button('Ver Dados Financeiros e Gráficos'):
             st.session_state['show_graphs'] = True
 
-        if 'show_graphs' in st.session_state and st.session_state['show_graphs']:
+        if st.session_state['show_graphs']:
             st.header('Dados Financeiros')
             financial_data = get_financial_data(username)
             if financial_data:
@@ -209,8 +218,51 @@ def home():
                 st.dataframe(df)
                 plot_balance_evolution(username)
 
-    else:
-        st.warning('Você precisa estar logado para ver esta página.')
+def login_form():
+    st.header('Login')
+    username = st.text_input('Username')
+    password = st.text_input('Password', type='password')
+    
+    if st.button('Login'):
+        if verify_password(username, password):
+            st.session_state['username'] = username
+            st.success('Login bem-sucedido!')
+            st.experimental_rerun()
+        else:
+            st.error('Nome de usuário ou senha incorretos.')
 
-if __name__ == "__main__":
+    if st.button('Registrar'):
+        register_form()
+
+def register_form():
+    st.header('Registrar')
+    username = st.text_input('Novo Username')
+    password = st.text_input('Nova Password', type='password')
+    confirm_password = st.text_input('Confirmar Password', type='password')
+
+    if st.button('Registrar'):
+        if password != confirm_password:
+            st.error('As senhas não coincidem.')
+        else:
+            register_user(username, password)
+            st.success('Usuário registrado com sucesso. Por favor, faça login.')
+            login_form()
+
+def add_financial_data_form(username):
+    st.header('Adicionar Dados Financeiros')
+    date = st.date_input('Data')
+    description = st.text_input('Descrição')
+    amount = st.number_input('Valor', min_value=0.0, format='%.2f')
+    type = st.selectbox('Tipo', ['Receita', 'Despesa'])
+    payment_method = st.selectbox('Método de Pagamento', ['À Vista', 'Cartão de Crédito'])
+    installments = st.number_input('Parcelas', min_value=1, step=1)
+    necessity = st.selectbox('Necessidade', ['Essencial', 'Não Essencial'])
+
+    if st.button('Adicionar'):
+        add_financial_data(username, date, description, amount, type, payment_method, installments, necessity)
+        st.success('Dados adicionados com sucesso!')
+        st.session_state['show_graphs'] = False
+        st.experimental_rerun()
+
+if __name__ == '__main__':
     home()
