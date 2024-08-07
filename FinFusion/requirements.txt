@@ -1,6 +1,5 @@
 streamlit
 pandas
-numpy
-streamlit
+sqlite3
 matplotlib
 yfinance
