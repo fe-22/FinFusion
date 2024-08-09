@@ -6,6 +6,42 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 from datetime import datetime, timedelta
 
+# Função para a página de dados financeiros e gráficos
+def financial_data_page(username):
+    # Inserir CSS para fundo preto
+    st.markdown(
+        """
+        <style>
+        body {
+            background-color: #121212;
+            color: white;
+        }
+        .css-1v3fvcr {
+            background-color: #121212;
+        }
+        .stButton>button {
+            color: white;
+            background-color: #333333;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    st.title('Dados Financeiros e Gráficos')
+
+    # Recuperar dados financeiros do usuário
+    financial_data = get_financial_data(username)
+    if financial_data is None:
+        st.error('Erro ao recuperar os dados financeiros.')
+        return
+
+    # Exibir tabela de dados financeiros
+    st.subheader('Dados Financeiros')
+    if financial_data:
+        df = pd.DataFrame(financial_data, columns=['id', 'Data', 'Descrição', 'Quantia', 'Tipo', 'Método de Pagamento', 'Parcelas', 'Necessidade'])
+        st.table(df.drop(columns=['id']))  # Exibir tabela sem a coluna 'id'
+
 # Função para hash de senha
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -74,41 +110,9 @@ def home():
 def format_currency(value):
     return f"R${value:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
-# Função para a página de dados financeiros e gráficos
-def financial_data_page(username):
-    # Inserir CSS para fundo preto
-    st.markdown(
-        """
-        <style>
-        body {
-            background-color: #121212;
-            color: white;
-        }
-        .css-1v3fvcr {
-            background-color: #121212;
-        }
-        .stButton>button {
-            color: white;
-            background-color: #333333;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    st.title('Dados Financeiros e Gráficos')
 
-    # Recuperar dados financeiros do usuário
-    financial_data = get_financial_data(username)
-    if financial_data is None:
-        st.error('Erro ao recuperar os dados financeiros.')
-        return
 
-    # Exibir tabela de dados financeiros
-    st.subheader('Dados Financeiros')
-    if financial_data:
-        df = pd.DataFrame(financial_data, columns=['id', 'Data', 'Descrição', 'Quantia', 'Tipo', 'Método de Pagamento', 'Parcelas', 'Necessidade'])
-        st.table(df.drop(columns=['id']))  # Exibir tabela sem a coluna 'id'
+
 
     # Gráfico de receitas e despesas
     st.subheader('Gráfico de Receitas e Despesas')
