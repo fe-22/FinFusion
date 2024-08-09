@@ -6,6 +6,41 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 from datetime import datetime, timedelta
 
+# Função para hash de senha
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# Função para verificar senha
+def verify_password(username, password):
+    with sqlite3.connect('finfusion.db') as conn:
+        c = conn.cursor()
+        c.execute("SELECT password FROM users WHERE username=?", (username,))
+        stored_password = c.fetchone()
+        if stored_password and stored_password[0] == hash_password(password):
+            return True
+        else:
+            return False
+
+# Função para registrar usuário
+def register_user(username, password):
+    with sqlite3.connect('finfusion.db') as conn:
+        c = conn.cursor()
+        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hash_password(password)))
+        conn.commit()
+
+# Função para recuperar dados financeiros do banco de dados
+def get_financial_data(username):
+    try:
+        with sqlite3.connect('finfusion.db') as conn:
+            c = conn.cursor()
+            c.execute("SELECT id, date, description, amount, type, payment_method, installments, necessity FROM financial_data WHERE username=?", (username,))
+            data = c.fetchall()
+        return data
+    except sqlite3.Error as e:
+        st.error(f"Erro ao conectar ao banco de dados: {e}")
+        return None
+
+# Função para a página inicial
 def home():
     st.title('FinFusion - Controle Financeiro')
 
@@ -35,19 +70,9 @@ def home():
             register_user(new_username, new_password)
             st.success('Usuário registrado com sucesso!')
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def verify_password(username, password):
-    with sqlite3.connect('finfusion.db') as conn:
-        c = conn.cursor()
-        c.execute("SELECT password FROM users WHERE username=?", (username,))
-        stored_password = c.fetchone()
-        if stored_password and stored_password[0] == hash_password(password):
-            return True
-        else:
-            return False
-
+# Função para formatar números em moeda
+def format_currency(value):
+    return f"R${value:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
 # Função para a página de dados financeiros e gráficos
 def financial_data_page(username):
