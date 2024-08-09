@@ -50,6 +50,7 @@ def financial_data_page(username):
         plt.title('Receitas e Despesas ao Longo do Tempo')
         plt.grid(color='gray', linestyle='--', linewidth=0.5)
         st.pyplot(plt)
+        plt.clf()
 
         # Alertar para os maiores gastos
         st.subheader('Alertas de Maiores Gastos')
@@ -64,6 +65,7 @@ def financial_data_page(username):
         plt.title('Despesas por Categoria')
         plt.grid(color='gray', linestyle='--', linewidth=0.5)
         st.pyplot(plt)
+        plt.clf()
 
         # Gráficos de Bitcoin, Ethereum, IBOVESPA e NASDAQ
         st.subheader('Evolução do Bitcoin, Ethereum, IBOVESPA e NASDAQ')
@@ -87,17 +89,20 @@ def financial_data_page(username):
             plt.ylabel('Preço de Fechamento')
             plt.grid(color='gray', linestyle='--', linewidth=0.5)
             st.pyplot(plt)
+            plt.clf()
 
-# Sugestões de Compra
-st.subheader('Sugestões de Compra')
-for name, df in data.items():
-    current_price = df['Close'][-1]
-    st.write(f'Preço atual do {name}: {format_currency(current_price)}')
-    if current_price < df['Close'].mean():
-        st.write(f'Sugestão: Pode ser uma boa hora para comprar {name}.')
+        # Sugestões de Compra
+        st.subheader('Sugestões de Compra')
+        for name, df in data.items():
+            current_price = df['Close'][-1]
+            st.write(f'Preço atual do {name}: {format_currency(current_price)}')
+            if current_price < df['Close'].mean():
+                st.write(f'Sugestão: Pode ser uma boa hora para comprar {name}.')
+            else:
+                st.write(f'Sugestão: Espere uma possível queda no preço de {name} antes de comprar.")
     else:
-        st.write(f'Sugestão: Espere uma possível queda no preço de {name} antes de comprar.')
-    
+        st.error('Nenhum dado financeiro disponível.')
+
     # Voltar à página inicial
     st.sidebar.title('Navegação')
     if st.sidebar.button('Voltar'):
@@ -178,3 +183,4 @@ if __name__ == '__main__':
         financial_data_page(st.session_state['username'])
     else:
         home()
+
