@@ -92,7 +92,7 @@ def financial_data_page(username):
         st.subheader('Sugestões de Compra')
         for name, df in data.items():
             current_price = df['Close'][-1]
-            st.write(f'Preço atual do {name}: {format_currency(current_price)}")
+           st.write(f'Preço atual do {name}: {format_currency(current_price)}')
             if current_price < df['Close'].mean():
                 st.write(f'Sugestão: Pode ser uma boa hora para comprar {name}.')
             else:
