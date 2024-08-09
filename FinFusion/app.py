@@ -6,6 +6,36 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 from datetime import datetime, timedelta
 
+# Função para recuperar dados financeiros do banco de dados
+def get_financial_data(username):
+    try:
+        with sqlite3.connect('finfusion.db') as conn:
+            c = conn.cursor()
+            c.execute("SELECT id, date, description, amount, type, payment_method, installments, necessity FROM financial_data WHERE username=?", (username,))
+            data = c.fetchall()
+            if data:
+                st.write(f"Dados financeiros recuperados para {username}: {data}")
+            else:
+                st.write(f"Nenhum dado financeiro encontrado para {username}.")
+        return data
+    except sqlite3.Error as e:
+        st.error(f"Erro ao conectar ao banco de dados: {e}")
+        return None
+# Função para inserir dados financeiros de teste
+def insert_test_data(username):
+    with sqlite3.connect('finfusion.db') as conn:
+        c = conn.cursor()
+        # Insere um exemplo de dado financeiro
+        c.execute("""
+            INSERT INTO financial_data (username, date, description, amount, type, payment_method, installments, necessity)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (username, '2023-07-01', 'Compra Teste', 150.00, 'Despesa', 'Cartão de Crédito', 1, 'Necessidade'))
+        conn.commit()
+
+# Adicionar dados de teste para o usuário atual
+insert_test_data('usuario_teste')
+
+
 # Função para a página de dados financeiros e gráficos
 def financial_data_page(username):
     st.title('Dados Financeiros e Gráficos')
