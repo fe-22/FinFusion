@@ -270,7 +270,6 @@ def home():
         st.sidebar.title('Navegação')
         if st.sidebar.button('Ver Dados Financeiros e Gráficos'):
             st.session_state['show_graphs'] = True
-            st.experimental_rerun()
 
     else:
         st.subheader('Login')
@@ -280,7 +279,6 @@ def home():
             if verify_password(username, password):
                 st.session_state['username'] = username
                 st.success('Login bem-sucedido!')
-                st.experimental_rerun()
             else:
                 st.error('Nome de usuário ou senha incorretos.')
 
@@ -291,6 +289,8 @@ def home():
             register_user(new_username, new_password)
             st.success('Usuário registrado com sucesso!')
 
+
+    
 # Função para a página de dados financeiros e gráficos
 def financial_data_page(username):
     st.title('Dados Financeiros e Gráficos')
