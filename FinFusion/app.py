@@ -107,7 +107,6 @@ def financial_data_page(username):
     st.sidebar.title('Navegação')
     if st.sidebar.button('Voltar'):
         st.session_state['show_graphs'] = False
-        st.experimental_rerun()
 
 # Função para hash de senha
 def hash_password(password):
@@ -164,7 +163,6 @@ def home():
             if verify_password(username, password):
                 st.session_state['username'] = username
                 st.session_state['show_graphs'] = True  # Ativa a navegação para gráficos
-                st.experimental_rerun()  # Redireciona para a página de gráficos
             else:
                 st.error('Nome de usuário ou senha incorretos.')
 
