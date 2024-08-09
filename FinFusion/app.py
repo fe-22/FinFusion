@@ -99,7 +99,7 @@ def financial_data_page(username):
             if current_price < df['Close'].mean():
                 st.write(f'Sugestão: Pode ser uma boa hora para comprar {name}.')
             else:
-                st.write(f'Sugestão: Espere uma possível queda no preço de {name} antes de comprar.")
+                st.write(f'Sugestão: Espere uma possível queda no preço de {name} antes de comprar.')
     else:
         st.error('Nenhum dado financeiro disponível.')
 
@@ -183,4 +183,3 @@ if __name__ == '__main__':
         financial_data_page(st.session_state['username'])
     else:
         home()
-
