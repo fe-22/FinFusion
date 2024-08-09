@@ -64,6 +64,41 @@ def register_user(username, password):
         c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hash_password(password)))
         conn.commit()
 
+def home():
+    st.title('FinFusion - Controle Financeiro')
+
+    if 'username' in st.session_state:
+        username = st.session_state['username']
+        st.success(f'Bem-vindo, {username}!')
+        st.write("Você está logado!")  # Debug para verificar se o login foi bem-sucedido
+
+        # Se show_graphs for True, vá para a página de gráficos
+        if 'show_graphs' in st.session_state and st.session_state['show_graphs']:
+            financial_data_page(username)
+        else:
+            st.write("Configuração do estado não encontrada, exibindo página de início.")
+            # Aqui você pode adicionar qualquer funcionalidade extra da home
+    else:
+        # Exibir a interface de login
+        st.subheader('Login')
+        username = st.text_input('Usuário')
+        password = st.text_input('Senha', type='password')
+        if st.button('Entrar'):
+            if verify_password(username, password):
+                st.session_state['username'] = username
+                st.session_state['show_graphs'] = True
+                st.success('Login bem-sucedido!')
+                st.experimental_rerun()  # Redireciona para a página de gráficos
+            else:
+                st.error('Nome de usuário ou senha incorretos.')
+
+        st.subheader('Registrar')
+        new_username = st.text_input('Novo Usuário')
+        new_password = st.text_input('Nova Senha', type='password')
+        if st.button('Registrar'):
+            register_user(new_username, new_password)
+            st.success('Usuário registrado com sucesso!')
+
 # Função para recuperar dados financeiros do banco de dados
 def get_financial_data(username):
     try:
