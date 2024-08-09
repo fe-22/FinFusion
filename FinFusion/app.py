@@ -35,6 +35,20 @@ def home():
             register_user(new_username, new_password)
             st.success('Usuário registrado com sucesso!')
 
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(username, password):
+    with sqlite3.connect('finfusion.db') as conn:
+        c = conn.cursor()
+        c.execute("SELECT password FROM users WHERE username=?", (username,))
+        stored_password = c.fetchone()
+        if stored_password and stored_password[0] == hash_password(password):
+            return True
+        else:
+            return False
+
+
 # Função para a página de dados financeiros e gráficos
 def financial_data_page(username):
     # Inserir CSS para fundo preto
