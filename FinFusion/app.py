@@ -8,26 +8,6 @@ from datetime import datetime, timedelta
 
 # Função para a página de dados financeiros e gráficos
 def financial_data_page(username):
-    # Inserir CSS para fundo preto
-    st.markdown(
-        """
-        <style>
-        body {
-            background-color: #121212;
-            color: white;
-        }
-        .css-1v3fvcr {
-            background-color: #121212;
-        }
-        .stButton>button {
-            color: white;
-            background-color: #333333;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-    
     st.title('Dados Financeiros e Gráficos')
 
     # Recuperar dados financeiros do usuário
@@ -164,7 +144,6 @@ def home():
             if verify_password(username, password):
                 st.session_state['username'] = username
                 st.session_state['show_graphs'] = True  # Ativa a navegação para gráficos
-                st.experimental_rerun()  # Recarrega a página para exibir os gráficos
             else:
                 st.error('Nome de usuário ou senha incorretos.')
 
