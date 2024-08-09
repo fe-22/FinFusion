@@ -6,7 +6,34 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 from datetime import datetime, timedelta
 
-# Demais funções existentes...
+def home():
+    st.title('FinFusion - Controle Financeiro')
+
+    if 'username' in st.session_state:
+        username = st.session_state['username']
+        st.success(f'Bem-vindo, {username}!')
+
+        # Exemplo de funcionalidades dentro da home
+        # Seu código para o upload de arquivos, resumo financeiro, etc.
+        
+    else:
+        # Exibir a interface de login
+        st.subheader('Login')
+        username = st.text_input('Usuário')
+        password = st.text_input('Senha', type='password')
+        if st.button('Entrar'):
+            if verify_password(username, password):
+                st.session_state['username'] = username
+                st.success('Login bem-sucedido!')
+            else:
+                st.error('Nome de usuário ou senha incorretos.')
+
+        st.subheader('Registrar')
+        new_username = st.text_input('Novo Usuário')
+        new_password = st.text_input('Nova Senha', type='password')
+        if st.button('Registrar'):
+            register_user(new_username, new_password)
+            st.success('Usuário registrado com sucesso!')
 
 # Função para a página de dados financeiros e gráficos
 def financial_data_page(username):
