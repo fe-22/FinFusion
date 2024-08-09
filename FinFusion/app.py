@@ -88,15 +88,15 @@ def financial_data_page(username):
             plt.grid(color='gray', linestyle='--', linewidth=0.5)
             st.pyplot(plt)
 
-        # Sugestões de Compra
-        st.subheader('Sugestões de Compra')
-        for name, df in data.items():
-            current_price = df['Close'][-1]
-           st.write(f'Preço atual do {name}: {format_currency(current_price)}')
-            if current_price < df['Close'].mean():
-                st.write(f'Sugestão: Pode ser uma boa hora para comprar {name}.')
-            else:
-                st.write(f'Sugestão: Espere uma possível queda no preço de {name} antes de comprar.')
+# Sugestões de Compra
+st.subheader('Sugestões de Compra')
+for name, df in data.items():
+    current_price = df['Close'][-1]
+    st.write(f'Preço atual do {name}: {format_currency(current_price)}')
+    if current_price < df['Close'].mean():
+        st.write(f'Sugestão: Pode ser uma boa hora para comprar {name}.')
+    else:
+        st.write(f'Sugestão: Espere uma possível queda no preço de {name} antes de comprar.')
     
     # Voltar à página inicial
     st.sidebar.title('Navegação')
