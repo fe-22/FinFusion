@@ -183,7 +183,7 @@ def home():
             if verify_password(username, password):
                 st.session_state['username'] = username
                 st.session_state['logged_in'] = True
-                st.experimental_set_query_params(rerun='true')
+                st.experimental_set_query_params(logged_in=True)
                 st.experimental_rerun()
             else:
                 st.error('Nome de usuário ou senha incorretos.')
@@ -211,11 +211,13 @@ def insert_data_page():
         payment_method = st.selectbox("Método de Pagamento", ["Dinheiro", "Cartão de Crédito", "Cartão de Débito", "Transferência"])
         installments = st.number_input("Parcelas", min_value=1, max_value=12, value=1)
         necessity = st.selectbox("Necessidade", ["Essencial", "Não essencial"])
-        submit_button = st.form_submit_button("Adicionar")
+        submitted = st.form_submit_button("Salvar")
 
-    if submit_button:
-        add_financial_data(username, date, description, amount, type, payment_method, installments, necessity)
-        st.success("Dados adicionados com sucesso!")
+        if submitted:
+            add_financial_data(username, date, description, amount, type, payment_method, installments, necessity)
+            st.success("Dados financeiros adicionados com sucesso!")
+            st.experimental_set_query_params(rerun='true')
+            st.experimental_rerun()
 
     add_footer()
 
