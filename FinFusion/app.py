@@ -51,6 +51,24 @@ def download_data(symbol, start_date, end_date):
         data = yf.download(symbol, start=start_date, end=end_date)
         return data
 
+def download_data(symbol, start_date, end_date):
+    try:
+        data = yf.download(symbol, start=start_date, end=end_date)
+        return data
+    except BrokenPipeError:
+        time.sleep(5)  # Espera de 5 segundos
+        data = yf.download(symbol, start=start_date, end=end_date)
+        return data
+
+def download_data(symbol, start_date, end_date):
+    try:
+        data = yf.download(symbol, start=start_date, end=end_date, timeout=30)
+        return data
+    except BrokenPipeError:
+        time.sleep(5)  # Espera de 5 segundos
+        data = yf.download(symbol, start=start_date, end=end_date, timeout=30)
+        return data
+
 def register_user(username, password):
     with sqlite3.connect('finfusion.db') as conn:
         c = conn.cursor()
