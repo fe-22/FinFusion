@@ -175,7 +175,7 @@ def home():
             if verify_password(username, password):
                 st.session_state['username'] = username
                 st.session_state['logged_in'] = True
-                # Evite o `st.experimental_rerun()`, pois a mudança de estado automaticamente atualiza a interface.
+             
             else:
                 st.error('Nome de usuário ou senha incorretos.')
         
@@ -208,8 +208,7 @@ def insert_data_page():
         if submitted:
             add_financial_data(username, date, description, amount, type, payment_method, installments, necessity)
             st.success("Dados financeiros adicionados com sucesso!")
-            st.experimental_set_query_params(rerun='true')
-            st.experimental_rerun()
+
 
     add_footer()
 
@@ -231,8 +230,7 @@ def financial_data_page():
         if st.button("Remover Selecionados"):
             remove_financial_data(ids_to_remove)
             st.success("Dados removidos com sucesso!")
-            st.experimental_set_query_params(rerun='true')
-            st.experimental_rerun()
+          
 
     add_footer()
 
