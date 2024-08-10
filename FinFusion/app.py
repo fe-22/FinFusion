@@ -158,21 +158,13 @@ def home():
     create_database()  # Garantir que o banco de dados existe
     st.title('FinFusion - Controle Financeiro')
 
-    if 'logged_in' in st.session_state and st.session_state['logged_in']:
+    if 'logged_in' not in st.session_state:
+        st.session_state['logged_in'] = False
+
+    if st.session_state['logged_in']:
         username = st.session_state['username']
-        # Exibir saldo líquido
         balance = calculate_total_balance(username)
         st.subheader(f'Saldo Líquido: {format_currency(balance)}')
-
-        # Exibir alerta de cheque especial
-        if balance < 0:
-            overdraft_amount = abs(balance)
-            overdraft_interest = 0.08
-            interest_amount = overdraft_amount * overdraft_interest
-            st.error(f"Alerta: Você está no cheque especial! Juros de 8% ao mês serão aplicados. "
-                     f"Saldo: {format_currency(balance)}. Juros futuros: {format_currency(interest_amount)} por mês.")
-
-        # Exibir navegação lateral
         sidebar_navigation()
     else:
         # Formulário de login
@@ -183,11 +175,10 @@ def home():
             if verify_password(username, password):
                 st.session_state['username'] = username
                 st.session_state['logged_in'] = True
-                st.experimental_set_query_params(logged_in=True)
-                st.experimental_rerun()
+                # Evite o `st.experimental_rerun()`, pois a mudança de estado automaticamente atualiza a interface.
             else:
                 st.error('Nome de usuário ou senha incorretos.')
-
+        
         # Formulário de registro
         st.subheader('Registrar')
         new_username = st.text_input('Novo Usuário')
@@ -197,6 +188,7 @@ def home():
             st.success('Usuário registrado com sucesso!')
             
     add_footer()
+
 
 def insert_data_page():
     st.title("Inserir Dados Financeiros")
