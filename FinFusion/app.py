@@ -146,6 +146,7 @@ def add_footer():
 
 # Funções das páginas
 def home():
+    create_database()  # Garantir que o banco de dados existe
     st.title('FinFusion - Controle Financeiro')
 
     if 'logged_in' in st.session_state and st.session_state['logged_in']:
@@ -173,7 +174,7 @@ def home():
             if verify_password(username, password):
                 st.session_state['username'] = username
                 st.session_state['logged_in'] = True
-                  
+                query_params = st.query_params
             else:
                 st.error('Nome de usuário ou senha incorretos.')
 
@@ -186,6 +187,7 @@ def home():
             st.success('Usuário registrado com sucesso!')
             
     add_footer()
+
 
 def insert_data_page():
     st.title("Inserir Dados Financeiros")
