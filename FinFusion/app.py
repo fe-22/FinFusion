@@ -5,6 +5,7 @@ import numpy as np
 import sqlite3
 import hashlib
 from datetime import datetime, timedelta
+import time
 import yfinance as yf
 import matplotlib.pyplot as plt
 
@@ -40,6 +41,15 @@ def create_database():
     ''')
     conn.commit()
     conn.close()
+    
+def download_data(symbol, start_date, end_date):
+    try:
+        data = yf.download(symbol, start=start_date, end=end_date)
+        return data
+    except BrokenPipeError:
+        time.sleep(5)  # Espera de 5 segundos
+        data = yf.download(symbol, start=start_date, end=end_date)
+        return data
 
 def register_user(username, password):
     with sqlite3.connect('finfusion.db') as conn:
