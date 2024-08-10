@@ -5,7 +5,6 @@ import numpy as np
 import sqlite3
 import hashlib
 from datetime import datetime, timedelta
-import time
 import yfinance as yf
 import matplotlib.pyplot as plt
 
@@ -41,7 +40,7 @@ def create_database():
     ''')
     conn.commit()
     conn.close()
-    
+
 def download_data(symbol, start_date, end_date):
     try:
         data = yf.download(symbol, start=start_date, end=end_date)
@@ -198,7 +197,6 @@ def home():
             
     add_footer()
 
-
 def insert_data_page():
     st.title("Inserir Dados Financeiros")
 
@@ -226,123 +224,72 @@ def financial_data_page():
     username = st.session_state['username']
 
     financial_data = get_financial_data(username)
-    if len(financial_data) == 0:
-        st.warning('Nenhum dado financeiro disponível.')
-        return
+    if not financial_data:
+        st.warning("Nenhum dado financeiro encontrado.")
+    else:
+        df = pd.DataFrame(financial_data, columns=['ID', 'Data', 'Descrição', 'Quantia', 'Tipo', 'Método de Pagamento', 'Parcelas', 'Necessidade'])
+        st.write("### Dados Financeiros")
+        st.dataframe(df)
 
-    st.subheader('Dados Financeiros')
-    df = pd.DataFrame(financial_data, columns=['id', 'Data', 'Descrição', 'Quantia', 'Tipo', 'Método de Pagamento', 'Parcelas', 'Necessidade'])
-    st.table(df.drop(columns=['id']))
+        # Adicionar opção de deletar dados
+        ids_to_remove = st.multiselect("Selecione os IDs para remover", df['ID'])
+        if st.button("Remover Selecionados"):
+            remove_financial_data(ids_to_remove)
+            st.success("Dados removidos com sucesso!")
+            st.experimental_rerun()
 
+    add_footer()
+
+def financial_analysis_page():
+    st.title('Análise Financeira')
+
+    username = st.session_state['username']
+
+    # Saldo total
+    balance = calculate_total_balance(username)
+    st.subheader(f'Saldo Total: {format_currency(balance)}')
+
+    # Principais gastos
     display_major_expenses(username)
+
+    # Alerta de cheque especial e gastos no cartão de crédito
     alert_overdraft_and_credit(username)
 
     add_footer()
 
-def remove_data_page():
-    st.title("Remover Dados Financeiros")
+def stock_price_page():
+    st.title('Análise de Preço de Ações')
 
-    username = st.session_state['username']
+    symbol = st.text_input('Código da Ação (ex: AAPL)', 'AAPL')
+    start_date = st.date_input('Data Inicial', datetime.today() - timedelta(days=365))
+    end_date = st.date_input('Data Final', datetime.today())
 
-    financial_data = get_financial_data(username)
-    if len(financial_data) == 0:
-        st.warning('Nenhum dado financeiro disponível para remoção.')
-        return
-
-    st.subheader('Selecione os dados para remover')
-    df = pd.DataFrame(financial_data, columns=['id', 'Data', 'Descrição', 'Quantia', 'Tipo', 'Método de Pagamento', 'Parcelas', 'Necessidade'])
-    df = df.drop(columns=['id'])  # Remove a coluna 'id' para exibição
-    selected_rows = st.multiselect('Escolha os dados a serem removidos', df.index, format_func=lambda x: f"{df.loc[x, 'Descrição']} - {format_currency(df.loc[x, 'Quantia'])}")
-
-    if st.button('Remover selecionados'):
-        ids_to_remove = [financial_data[i][0] for i in selected_rows]
-        remove_financial_data(ids_to_remove)
-        st.success(f'Dados removidos com sucesso!')
-        st.experimental_rerun()
+    if st.button('Analisar'):
+        data = download_data(symbol, start_date, end_date)
+        if not data.empty:
+            st.subheader(f'Preço de Fechamento - {symbol}')
+            st.line_chart(data['Close'])
+        else:
+            st.warning("Nenhum dado encontrado para o código fornecido.")
 
     add_footer()
 
-def analysis_page():
-    st.title("Análises e Gráficos")
-    st.write("Aqui você pode visualizar gráficos e análises financeiras.")
-
-    st.subheader("Análise financeira")
-    df_example = pd.DataFrame({
-        'Data': pd.date_range(start='2023-01-01', periods=100),
-        'Valor': np.random.randn(100).cumsum()
-    }).set_index('Data')
-    
-    fig, ax = plt.subplots()
-    ax.plot(df_example.index, df_example['Valor'])
-    ax.set_title("Gastos")
-    ax.set_xlabel("Data")
-    ax.set_ylabel("Valor")
-    ax.grid(color='gray', linestyle='--', linewidth=0.5)
-    ax.set_facecolor('black')
-    fig.patch.set_facecolor('black')
-    ax.tick_params(axis='both', colors='white')
-    ax.xaxis.label.set_color('white')
-    ax.yaxis.label.set_color('white')
-    ax.title.set_color('white')
-    
-    st.pyplot(fig)
-
-    st.subheader('Evolução do Bitcoin, Ethereum, IBOVESPA e NASDAQ')
-    
-    end_date = datetime.today()
-    start_date = end_date - timedelta(days=180)
-    
-    symbols = {'Bitcoin': 'BTC-USD', 'Ethereum': 'ETH-USD', 'IBOVESPA': '^BVSP', 'NASDAQ': '^IXIC'}
-    data = {}
-    
-    for name, symbol in symbols.items():
-        data[name] = yf.download(symbol, start=start_date, end=end_date)
-    
-    for name, df in data.items():
-        fig, ax = plt.subplots()
-        ax.plot(df.index, df['Close'])
-        ax.set_title(f'Evolução do {name}')
-        ax.set_xlabel('Data')
-        ax.set_ylabel('Preço de Fechamento')
-        ax.grid(color='gray', linestyle='--', linewidth=0.5)
-        ax.set_facecolor('black')
-        fig.patch.set_facecolor('black')
-        ax.tick_params(axis='both', colors='white')
-        ax.xaxis.label.set_color('white')
-        ax.yaxis.label.set_color('white')
-        ax.title.set_color('white')
-        
-        st.pyplot(fig)
-
-    st.subheader('Sugestões de Compra')
-    for name, df in data.items():
-        current_price = df['Close'][-1]
-        st.write(f'Preço atual do {name}: {format_currency(current_price)}')
-        if current_price < df['Close'].mean():
-            st.write(f'Sugestão: Pode ser uma boa hora para comprar {name}.')
-        else:
-            st.write(f'Sugestão: Espere uma possível queda no preço de {name} antes de comprar.')
-
-# Função para navegação do sidebar
 def sidebar_navigation():
     st.sidebar.title("Navegação")
-    page = st.sidebar.selectbox("Escolha uma página", ["Inserir Dados", "Dados Financeiros", "Remover Dados", "Análises e Gráficos"])
+    menu = ["Home", "Inserir Dados", "Dados Financeiros", "Análise Financeira", "Análise de Preço de Ações"]
+    choice = st.sidebar.selectbox("Selecione a Página", menu)
 
-    if page == "Inserir Dados":
+    if choice == "Home":
+        home()
+    elif choice == "Inserir Dados":
         insert_data_page()
-    elif page == "Dados Financeiros":
+    elif choice == "Dados Financeiros":
         financial_data_page()
-    elif page == "Remover Dados":
-        remove_data_page()
-    elif page == "Análises e Gráficos":
-        analysis_page()
+    elif choice == "Análise Financeira":
+        financial_analysis_page()
+    elif choice == "Análise de Preço de Ações":
+        stock_price_page()
 
-# Inicializar a aplicação
+# Main
 if __name__ == '__main__':
-    if 'username' not in st.session_state:
-        st.session_state['username'] = None
-    if 'logged_in' not in st.session_state:
-        st.session_state['logged_in'] = False
-
-    create_database()
     home()
