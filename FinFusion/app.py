@@ -183,7 +183,8 @@ def home():
             if verify_password(username, password):
                 st.session_state['username'] = username
                 st.session_state['logged_in'] = True
-                query_params = st.query_params
+                st.experimental_set_query_params(rerun='true')
+                st.experimental_rerun()
             else:
                 st.error('Nome de usuário ou senha incorretos.')
 
@@ -236,6 +237,7 @@ def financial_data_page():
         if st.button("Remover Selecionados"):
             remove_financial_data(ids_to_remove)
             st.success("Dados removidos com sucesso!")
+            st.experimental_set_query_params(rerun='true')
             st.experimental_rerun()
 
     add_footer()
