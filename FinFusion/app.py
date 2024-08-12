@@ -198,7 +198,6 @@ def home():
             
     add_footer()
 
-
 def insert_data_page():
     st.title("Inserir Dados Financeiros")
 
@@ -251,7 +250,7 @@ def remove_data_page():
 
     st.subheader('Selecione os dados para remover')
     df = pd.DataFrame(financial_data, columns=['id', 'Data', 'Descrição', 'Quantia', 'Tipo', 'Método de Pagamento', 'Parcelas', 'Necessidade'])
-    df = df.drop(columns=['id'])  # Remove a coluna 'id' para exibição
+    df = df.drop(columns(['id']))  # Remove a coluna 'id' para exibição
     selected_rows = st.multiselect('Escolha os dados a serem removidos', df.index, format_func=lambda x: f"{df.loc[x, 'Descrição']} - {format_currency(df.loc[x, 'Quantia'])}")
 
     if st.button('Remover selecionados'):
@@ -268,7 +267,7 @@ def analysis_page():
 
     st.subheader("Análise financeira")
     df_example = pd.DataFrame({
-        'Data': pd.date_range(start='2023-01-01', periods=100),
+        'Data': pd.date_range(start='2024-08-01', periods=100),
         'Valor': np.random.randn(100).cumsum()
     }).set_index('Data')
     
@@ -316,7 +315,7 @@ def analysis_page():
 
     st.subheader('Sugestões de Compra')
     for name, df in data.items():
-        current_price = df['Close'][-1]
+        current_price = df['Close'].iloc[-1]
         st.write(f'Preço atual do {name}: {format_currency(current_price)}')
         if current_price < df['Close'].mean():
             st.write(f'Sugestão: Pode ser uma boa hora para comprar {name}.')
