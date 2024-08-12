@@ -1,6 +1,6 @@
-streamlit 1.37.1
+streamlit==1.37.1
 pandas
 numpy
 matplotlib
 yfinance
-Python 3.12.4
+Python==3.12.4
