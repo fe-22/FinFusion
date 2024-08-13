@@ -131,8 +131,8 @@ def alert_overdraft_and_credit(username):
         st.warning(f"Atenção: Seus gastos no cartão de crédito estão altos ({format_currency(credit_card_expenses)}). Limite sugerido: {format_currency(credit_limit)}.")
 
 # Função para adicionar o footer
-def add_footer():
-    st.markdown(
+#def add_footer():
+    #st.markdown(
         """
         <style>
          .footer {
@@ -195,7 +195,7 @@ def home():
             register_user(new_username, new_password)
             st.success('Usuário registrado com sucesso!')
             
-    add_footer()
+   # add_footer()
 
 def insert_data_page():
     st.title("Inserir Dados Financeiros")
@@ -223,7 +223,7 @@ def insert_data_page():
         if df is not None:
             st.dataframe(df)  # Exibe os dados carregados
 
-    add_footer()
+    #add_footer()
 
 def financial_data_page():
     st.title('Dados Financeiros')
@@ -264,7 +264,7 @@ def remove_data_page():
             ids_to_remove = [financial_data[i][0] for i in selected_rows]
             remove_financial_data(ids_to_remove)
             st.success(f'Dados removidos com sucesso!')
-            st.experimental_rerun()
+            #st.experimental_rerun()
         else:
             st.warning("Selecione ao menos um dado para remover.")
 
