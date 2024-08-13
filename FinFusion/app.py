@@ -1,4 +1,3 @@
-# Importações
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -41,7 +40,15 @@ def create_database():
     ''')
     conn.commit()
     conn.close()
-    
+
+def upload_excel(file):
+    try:
+        df = pd.read_excel(file)
+        return df
+    except Exception as e:
+        st.error(f"Erro ao carregar arquivo Excel: {e}")
+        return None
+
 def download_data(symbol, start_date, end_date):
     try:
         data = yf.download(symbol, start=start_date, end=end_date)
@@ -85,8 +92,11 @@ def add_financial_data(username, date, description, amount, type, payment_method
 def remove_financial_data(ids):
     with sqlite3.connect('finfusion.db') as conn:
         c = conn.cursor()
-        c.executemany("DELETE FROM financial_data WHERE id=?", [(id,) for id in ids])
-        conn.commit()
+        if ids:  # Verifica se a lista de IDs não está vazia
+            c.executemany("DELETE FROM financial_data WHERE id=?", [(id,) for id in ids])
+            conn.commit()
+        else:
+            st.warning("Nenhum dado selecionado para remoção.")
 
 # Funções adicionais
 def calculate_total_balance(username):
@@ -102,16 +112,6 @@ def display_major_expenses(username):
     if not data:
         st.warning('Nenhum dado financeiro disponível.')
         return
-
-    df = pd.DataFrame(data, columns=['id', 'Data', 'Descrição', 'Quantia', 'Tipo', 'Método de Pagamento', 'Parcelas', 'Necessidade'])
-
-    major_expenses = df[df['Tipo'] == 'Despesa'].sort_values(by='Quantia', ascending=False).head(5)
-    st.subheader('Maiores Gastos')
-    st.table(major_expenses[['Data', 'Descrição', 'Quantia', 'Método de Pagamento', 'Necessidade']])
-
-    non_essential_expenses = df[(df['Tipo'] == 'Despesa') & (df['Necessidade'] == 'Não essencial')].sort_values(by='Quantia', ascending=False)
-    st.subheader('Gastos Supérfluos')
-    st.table(non_essential_expenses[['Data', 'Descrição', 'Quantia', 'Método de Pagamento']])
 
 def alert_overdraft_and_credit(username):
     """Exibe alertas para cheque especial e gastos excessivos no cartão de crédito."""
@@ -184,7 +184,6 @@ def home():
             if verify_password(username, password):
                 st.session_state['username'] = username
                 st.session_state['logged_in'] = True
-                query_params = st.query_params
             else:
                 st.error('Nome de usuário ou senha incorretos.')
 
@@ -216,6 +215,13 @@ def insert_data_page():
     if submit_button:
         add_financial_data(username, date, description, amount, type, payment_method, installments, necessity)
         st.success("Dados adicionados com sucesso!")
+
+    # Adiciona o campo de upload de Excel
+    uploaded_file = st.file_uploader("Escolha uma planilha Excel", type=["xlsx"])
+    if uploaded_file is not None:
+        df = upload_excel(uploaded_file)
+        if df is not None:
+            st.dataframe(df)  # Exibe os dados carregados
 
     add_footer()
 
@@ -250,14 +256,17 @@ def remove_data_page():
 
     st.subheader('Selecione os dados para remover')
     df = pd.DataFrame(financial_data, columns=['id', 'Data', 'Descrição', 'Quantia', 'Tipo', 'Método de Pagamento', 'Parcelas', 'Necessidade'])
-    df = df.drop(columns(['id']))  # Remove a coluna 'id' para exibição
+    df = df.drop(columns=['id'])  # Remove a coluna 'id' para exibição
     selected_rows = st.multiselect('Escolha os dados a serem removidos', df.index, format_func=lambda x: f"{df.loc[x, 'Descrição']} - {format_currency(df.loc[x, 'Quantia'])}")
 
     if st.button('Remover selecionados'):
-        ids_to_remove = [financial_data[i][0] for i in selected_rows]
-        remove_financial_data(ids_to_remove)
-        st.success(f'Dados removidos com sucesso!')
-        st.experimental_rerun()
+        if selected_rows:
+            ids_to_remove = [financial_data[i][0] for i in selected_rows]
+            remove_financial_data(ids_to_remove)
+            st.success(f'Dados removidos com sucesso!')
+            st.experimental_rerun()
+        else:
+            st.warning("Selecione ao menos um dado para remover.")
 
     add_footer()
 
